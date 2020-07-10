@@ -95,9 +95,6 @@ int main(int argc, char* argv[]) {
         // Use absolute value to get the hashed index.
         int idx = abs(x) % HashSize;
 
-        // For test.
-        // printf("%c\t%d   index:%d\n", c, x, idx);
-
         // Insert to hashtable.
         if (c=='i'){
             (insert(idx, x) == 1) ? printf("inserted\n") : printf("duplicate\n");

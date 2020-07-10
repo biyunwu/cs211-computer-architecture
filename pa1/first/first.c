@@ -43,33 +43,9 @@ int main(int argc, char *argv[]) {
 
     fclose(file);
 
-//    printf("Hello, World: %d\n", total);
-//
-//    for (int i = 0; i < oddIdx; i++){
-//            printf("%d  ", odds[i]);
-//    }
-//    printf("\n");
-//
-//    for (int i = 0; i < evenIdx; i++){
-//        printf("%d  ", evens[i]);
-//    }
-//    printf("\n");
-
     // oddIdx and evenIdx are also sizes of the arrays.
     qsort(odds, oddIdx, sizeof(int), compareAscending);
     qsort(evens, evenIdx, sizeof(int), compareDescending);
-
-//    printf("Hello, World: %d\n", total);
-//
-//    for (int i = 0; i < oddIdx; i++){
-//        printf("%d  ", odds[i]);
-//    }
-//    printf("\n");
-//
-//    for (int i = 0; i < evenIdx; i++){
-//        printf("%d  ", evens[i]);
-//    }
-//    printf("\n");
 
     for (int i=0; i<oddIdx; i++){
         printf("%d\t", odds[i]);

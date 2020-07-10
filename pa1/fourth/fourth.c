@@ -35,11 +35,9 @@ void writeDataToMatrices (FILE **df){
         // Price (the 0th entry) and attributes (1 to c-1) data entries.
         for (n = 0; n < c; n++){
             fscanf(*df, "%lf,", &(matrix[m][n]));
-            // printf("%lf\t", matrix[m][n]);
         }
         // Last attribute: the (c)th entry in the row.
         fscanf(*df, "%lf\n", &(matrix[m][c]));
-        // printf("%lf\n", matrix[m][c+1]);
         m++;
     }
 
@@ -99,67 +97,24 @@ void gaussElimination(double ***aug, int m) {
             }
         }
 
-//        // Test starts.
-//        printf("After divising %d times:\n", k+1);
-//        for (i=0; i<c+1; i++){
-//            for (j=0; j<2*(c+1); j++){
-//                printf("%lf\t", augmented[i][j]);
-//            }
-//            printf("\n");
-//        }
-//        // Test ends.
-
         // r_1 - r_n -> r_n, 1 <= n < m. Make all entries under pivots to be 0.
         for (i=k+1; i<m; i++){
             for (j=0; j<2*m; j++){
                 (*aug)[i][j] = (*aug)[k][j] - (*aug)[i][j];
             }
         }
-
-//        // Test starts.
-//        printf("After row operation by %d times:\n", k+1);
-//        for (i=0; i<c+1; i++){
-//            for (j=0; j<2*(c+1); j++){
-//                printf("%lf\t", augmented[i][j]);
-//            }
-//            printf("\n");
-//        }
-//        // Test ends.
     }
-
-    // Test starts.
-//    printf("Clean the lower triangle:\n");
-//    for (i=0; i<c+1; i++){
-//        for (j=0; j<2*(c+1); j++){
-//            printf("%lf\t", augmented[i][j]);
-//        }
-//        printf("\n");
-//    }
-    // Test ends.
 
     // Clean the upper triangle of the left half of `aug`.
     // Starts from the first row.
     for (j=m-1; j>=0; j--){  // j: column index.
         for (i=0; i<j; i++){ // i: row index.
             double multiFactor = (*aug)[i][j];
-//            printf("multiFactor: %lf\n", multiFactor);
             for (n=0; n<2*m; n++){
                 (*aug)[i][n] -= (multiFactor * ((*aug)[j][n]));
             }
         }
     }
-
-    // Test starts.
-    // printf("After row operation on upper right matrix of the left half by %d times:\n", k+1);
-//    printf("Clean the upper triangle:\n");
-//    for (i=0; i<c+1; i++){
-//        for (j=0; j<2*(c+1); j++){
-//            printf("%lf\t", augmented[i][j]);
-//        }
-//        printf("\n");
-//    }
-    // Test ends.
-
 }
 
 // The right half of the augmented matrix is the inverse.
@@ -187,27 +142,6 @@ void free2dArray(double **arr, int m){
         free(arr[i]);
     }
 }
-
-//// For test
-//void print2dArray(double ***arr, int m, int n){
-//    int i, j;
-//    for (i=0; i < m; i++){
-//        for (int j=0; j<n; j++){
-//            printf("%lf\t", (*arr)[i][j]);
-//        }
-//        printf("\n");
-//    }
-//}
-//
-//// For test
-//void printVector(double **vec, int m){
-//    int i;
-//    printf("[");
-//    for (i=0; i < m; i++){
-//        printf("%lf\t", (*vec)[i]);
-//    }
-//    printf("]\n");
-//}
 
 void init() {
     // Allocate memory.
@@ -245,58 +179,30 @@ int main(int argc, char* argv[]) {
 
     init();
     writeDataToMatrices(&df);
+    fclose(df);
     generateTranspose(&matrix, &transpose);
-
-    int i, j;
-
-//    // Test starts.
-//    printf("Matrix:\n");
-//    print2dArray(&matrix, r, c+1);
-//    printf("Transpose:\n");
-//    print2dArray(&transpose, c+1, r);
-//    // Test ends.
 
     // (X^T)*X. Store the result to the left part of `augmented`.
     matrixTimesMatrix(&transpose, &matrix, c+1, r, c+1, &augmented);
     // Augmented matrix: [tranTimesMatrix, Identity matrix]. Dimension: (c+1)*2(c+1)
     fillMatrixWithIdentity(&augmented, c + 1);
 
-//    // Test starts.
-//    printf("Augmented matrix:\n");
-//    print2dArray(&augmented, c+1, 2*(c+1));
-//    // Test ends.
-
     gaussElimination(&augmented, c + 1);
     copyToInverse(&augmented, &inverse, c+1, c+1);
     matrixTimesMatrix(&inverse, &transpose, c+1, c+1, r, &invTimTran);
     matrixTimesVector(&invTimTran, c+1, r, &priceVector, &weights);
 
-//    // Test starts.
-//    printf("Augmented matrix after Gauss elimination:\n");
-//    print2dArray(&augmented, c+1, 2*(c+1));
-//    printf("Inverse matrix:\n");
-//    print2dArray(&inverse, c+1, c+1);
-//    printf("Inverse times transpose:\n");
-//    print2dArray(&invTimTran, c+1, r);
-//    printf("Price:\n");
-//    printVector(&priceVector, r);
-//    printf("Weights:\n");
-//    printVector(&weights, c+1);
-//    // Test ends.
-
-    fclose(df);
-
     // Open file with test data.
     FILE *td = fopen(argv[2], "r");
     int dataCount;
     fscanf(td, "%d\n", &dataCount);
+    int i, j;
     double temp;
     for (i=0; i<dataCount; i++) {
         double estimatedValue = weights[0];
         for (j=1; j<c+1; j++){
             fscanf(td, "%lf,", &temp);
             estimatedValue += ((weights[j]) * temp);
-            // printf("%lf\n", temp);
         }
         printf("%0.0lf\n", estimatedValue); // Round to the nearest integer.
     }
