@@ -5,7 +5,6 @@ set(CMAKE_C_STANDARD 11)
 
 set(Sources fourth.c)
 
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
 add_executable(fourth fourth.c)

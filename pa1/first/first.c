@@ -16,6 +16,10 @@ int compareDescending (const void* x, const void* y){
 }
 
 int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        return -1;
+    }
+
     // Read file from command line argument.
     FILE *file;
     file = fopen(argv[1], "r");

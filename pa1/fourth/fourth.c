@@ -22,7 +22,7 @@ double *priceVector, *weights;
 
 void allocate2dArray(double ***arr, int m, int n){
     *arr = (double **) calloc(m, sizeof(double *));
-    int i, j;
+    int i;
     for (i = 0; i < m; i++){
         (*arr)[i] = (double *) calloc(n, sizeof(double));
     }
@@ -180,8 +180,8 @@ int main(int argc, char* argv[]) {
     init();
     writeDataToMatrices(&df);
     fclose(df);
-    generateTranspose(&matrix, &transpose);
 
+    generateTranspose(&matrix, &transpose);
     // (X^T)*X. Store the result to the left part of `augmented`.
     matrixTimesMatrix(&transpose, &matrix, c+1, r, c+1, &augmented);
     // Augmented matrix: [tranTimesMatrix, Identity matrix]. Dimension: (c+1)*2(c+1)
