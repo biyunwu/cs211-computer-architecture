@@ -143,27 +143,6 @@ void free2dArray(double **arr, int m){
     }
 }
 
-void init() {
-    // Allocate memory.
-    allocate2dArray(&matrix, r, c+1);
-    allocate2dArray(&transpose, c+1, r);
-    allocate2dArray(&augmented, c+1, 2*(c+1));
-    allocate2dArray(&inverse, c+1, c+1);
-    allocate2dArray(&invTimTran, c+1, r);
-    priceVector = (double *) calloc(r, sizeof(double));
-    weights = (double *) calloc((c+1), sizeof(double));
-}
-
-void freeMemory() {
-    free2dArray(matrix, r);
-    free2dArray(transpose, c + 1);
-    free2dArray(augmented, c+1);
-    free2dArray(inverse, c+1);
-    free2dArray(invTimTran, c+1);
-    free(priceVector);
-    free(weights);
-}
-
 int main(int argc, char* argv[]) {
     // Check command line arguments.
     if (argc < 3){
@@ -177,20 +156,39 @@ int main(int argc, char* argv[]) {
     fscanf(df, "%d\n", &c);
     fscanf(df, "%d\n", &r);
 
-    init();
+    // init();
+    allocate2dArray(&matrix, r, c+1);
+    priceVector = (double *) calloc(r, sizeof(double));
+
     writeDataToMatrices(&df);
     fclose(df);
 
+    allocate2dArray(&transpose, c+1, r);
     generateTranspose(&matrix, &transpose);
+
+    allocate2dArray(&augmented, c+1, 2*(c+1));
     // (X^T)*X. Store the result to the left part of `augmented`.
     matrixTimesMatrix(&transpose, &matrix, c+1, r, c+1, &augmented);
+    free2dArray(matrix, r);
+
     // Augmented matrix: [tranTimesMatrix, Identity matrix]. Dimension: (c+1)*2(c+1)
     fillMatrixWithIdentity(&augmented, c + 1);
 
     gaussElimination(&augmented, c + 1);
+
+    allocate2dArray(&inverse, c+1, c+1);
     copyToInverse(&augmented, &inverse, c+1, c+1);
+    free2dArray(augmented, c+1);
+
+    allocate2dArray(&invTimTran, c+1, r);
     matrixTimesMatrix(&inverse, &transpose, c+1, c+1, r, &invTimTran);
+    free2dArray(inverse, c+1);
+    free2dArray(transpose, c + 1);
+
+    weights = (double *) calloc((c+1), sizeof(double));
     matrixTimesVector(&invTimTran, c+1, r, &priceVector, &weights);
+    free2dArray(invTimTran, c+1);
+    free(priceVector);
 
     // Open file with test data.
     FILE *td = fopen(argv[2], "r");
@@ -206,9 +204,8 @@ int main(int argc, char* argv[]) {
         }
         printf("%0.0lf\n", estimatedValue); // Round to the nearest integer.
     }
-
+    free(weights);
     fclose(td);
 
-    freeMemory();
     return 0;
 }
