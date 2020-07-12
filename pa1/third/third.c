@@ -23,10 +23,10 @@ unsigned short complement (unsigned short decimal, int n){
 }
 
 unsigned short set (unsigned short decimal, int n, int num){
-    unsigned short checker = getBinary(n);
+    unsigned short checker = getBinary(n);                       // `checker`: 000010000
     unsigned short bool = decimal & checker;
-    return bool ? ((num == 0) ? (decimal ^ checker) : decimal)   // bool: 000000100000. The nth bit is 1.
-                : ((num == 0) ? decimal : (decimal ^ checker));  // bool: 000000000000. The nth bit is 0.
+    return bool ? ((num == 0) ? (decimal ^ checker) : decimal)   // `decimal`: xxxx1xxxx. The nth bit is 1.
+                : ((num == 0) ? decimal : (decimal ^ checker));  // `decimal`: xxxx0xxxx. The nth bit is 0.
 }
 
 int main(int argc, char* argv[]) {
