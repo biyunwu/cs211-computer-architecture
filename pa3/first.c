@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     // Get cache policy.
     if (strcmp("fifo", policyStr) == 0) policy = 0; // First In First Out.
     if (strcmp("lru", policyStr) == 0) policy = 1;  // Least Recently Used.
-     if (policy < 0 || strlen(policyStr) > 4) return error("Error: cache policy is either \"fifo\" or \"lru\" (the 3rd argument)!");
+    if (policy < 0 || strlen(policyStr) > 4) return error("Error: cache policy is either \"fifo\" or \"lru\" (the 3rd argument)!");
     // Get associativity.
     if (strcmp("assoc", assocStr) == 0) assoc = 0;  // Fully associative cache.
     if (strcmp("direct", assocStr) == 0) assoc = 1; // Direct mapped cache.
@@ -44,9 +44,9 @@ int main(int argc, char* argv[]) {
     unsigned long long blocksNum = cacheSize/blockSize;
     unsigned long long setsNum = (assoc == 0) ? 1 : (blocksNum / assoc); // Fully associative cache OR n-way cache.
     int offsetBits = (int)(log2((double)blockSize)); // log_2 (blockSize)
-    int setBits = (int)(log2((double)setsNum));      // log_2 (setsNum)
-    // Fully associative cache has 0 Set bit.
-    int tagBits = (assoc == 0) ? (BITS - offsetBits) : (BITS - setBits - offsetBits);
+    int setBits = (int)(log2((double)setsNum));      // log_2 (setsNum), if setsNum=1, setBits=0. 2^0 = 1.
+    // Fully associative cache has 0 set bit.
+    int tagBits = BITS - setBits - offsetBits;
     // Evaluate cache specs.
     if (setsNum < 1 || tagBits < 1) return error("Invalid setsNum/tagBits, cannot Set up cache based on arguments!");
 
@@ -61,27 +61,18 @@ int main(int argc, char* argv[]) {
     // Hexadecimal address has (BITS/4 + 2 + 1) chars with leading "0x" (2) and '\0' (1) which indicates the end of the string.
     // Without the extra 1 bit for '\0', compiling rule "-fsanitize=address" would generate heap-buffer-overflow in running time.
     char c, *hexAddress = (char *) malloc((BITS/4 + 3) * sizeof(char));
-    if (assoc == 0){ // Fully associative cache.
-        FaCache fac = initFACache(blocksNum);
-        // Read trace file line by line.
-        while (fscanf(file, "%c\t%s\n", &c, hexAddress) != EOF && (c == 'R' || c == 'W')) {
-            unsigned long long tag = getDecTag(getDecAddress(hexAddress), setBits, offsetBits);
-            int found = readBlockInSet(fac, tag, policy); // found: 1, not found: 0.
-            // Full associative map has only 1 set. The set index is always 0.
-            updateCache(found, c, fac, 0, tag, record); // FA cache has only 1 set with index 0.
-        }
-        freeFACache(fac);   // Free cache.
-    } else {   // N-way cache. Direct-mapped cache is a special n-way cache as assoc=1.
-        NwCache nwCache = initNWCache(setsNum, assoc);
-        while (fscanf(file, "%c\t%s\n", &c, hexAddress) != EOF && (c == 'R' || c == 'W')) {
-            unsigned long long decAddress = getDecAddress(hexAddress);
-            unsigned long long setIdx = getSetIndex(decAddress, setBits, offsetBits);
-            unsigned long long tag = getDecTag(decAddress, setBits, offsetBits);
-            int found = readBlockInSet(&(nwCache[setIdx]), tag, policy);
-            updateCache(found, c, nwCache, setIdx, tag, record);
-        }
-        freeNWCache(nwCache, setsNum);
+
+    // Fully associative cache is a special `NwCache` with a single set, which has `cacheSize/blockSize` blocks.
+    NwCache nwCache = (assoc == 0) ? initNWCache(setsNum, blocksNum): initNWCache(setsNum, assoc);
+    unsigned long long binaryMask = getBinaryMaskForSetIndex(setBits); // ...0000001111  if setBits = 4.
+    while (fscanf(file, "%c\t%s\n", &c, hexAddress) != EOF && (c == 'R' || c == 'W')) {
+        unsigned long long decAddress = getDecAddress(hexAddress);
+        unsigned long long setIdx = (assoc == 0) ? 0 : getSetIndex(decAddress, offsetBits, binaryMask);
+        unsigned long long tag = getDecTag(decAddress, setBits, offsetBits);
+        int found = readBlockInSet(&(nwCache[setIdx]), tag, policy);
+        updateCache(found, c, nwCache, setIdx, tag, record);
     }
+    freeNWCache(nwCache, setsNum);
 
     // Print result.
     printf("Memory reads: %lld\n", (record->reads));

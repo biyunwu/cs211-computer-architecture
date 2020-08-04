@@ -7,7 +7,7 @@
 
 Set* initSet (unsigned long long assoc){
     Set *setPointer = (Set *) malloc(sizeof(Set));
-    int i;
+    unsigned long long i;
     Block *temp = NULL;
     for (i=0; i < assoc; i++){
         Block *b = (Block *) malloc(sizeof(Block));
@@ -33,7 +33,7 @@ void freeSet(Set *setPointer){
 // Direct-mapped cache is a special n-way cache with assoc=1.
 NwCache initNWCache(unsigned long long setsNum, unsigned long long assoc){
     Set *cache = (Set *) malloc(setsNum * sizeof(Set));
-    int i;
+    unsigned long long i;
     for (i=0; i<setsNum; i++){
         Set *setPointer = initSet(assoc);
         cache[i].head = setPointer->head;
@@ -44,19 +44,11 @@ NwCache initNWCache(unsigned long long setsNum, unsigned long long assoc){
 }
 
 void freeNWCache(NwCache cache, unsigned long long setsNum){
-    int i;
+    unsigned long long i;
     for (i=0; i<setsNum; i++){
         freeSet(&(cache[i]));
     }
     free(cache);
-}
-
-FaCache initFACache (unsigned long long numOfBlocks){
-    return initSet(numOfBlocks);
-}
-
-void freeFACache(FaCache cache){
-    freeSet(cache);
 }
 
 void putBlockToEnd(Set *set, Block *prev, Block *ptr){
@@ -73,30 +65,10 @@ void putBlockToEnd(Set *set, Block *prev, Block *ptr){
 }
 
 void writeToSet(Set *set, unsigned long long tag){
-    // Policy: FIFO -> 0, LRU -> 1.
-    if (policy){ // Least Recently Used.
-        Block *prev = NULL, *ptr = set->head, *nextPtr = ptr->next;
-        while(nextPtr != NULL && nextPtr->v == 0){   // Find available (empty) block.
-            prev = ptr;
-            ptr = nextPtr;
-            nextPtr = nextPtr->next;
-        }
-        ptr->v = 1;
-        ptr->tag = tag;
-        // Put to the end.
-        putBlockToEnd(set, prev, ptr);
-   } else {     // First In First Out.
-       Block *head = set->head;
-       // Write data to the 1st block.
-        head->v = 1;
-        head->tag = tag;
-       if (head->next == NULL) return; // Direct-mapped cache has 1 block in every set.
-       // Put the first block to the end of the linked list so the head is always the block to write new data.
-        set->head = head->next;
-        head->next = NULL;
-        set->tail->next = head;
-        set->tail = head;
-    }
+   // Write data to the 1st block, then put the head to the tail.
+   set->head->v = 1;
+   set->head->tag = tag;
+   putBlockToEnd(set, NULL, set->head);
 }
 
 // Policy: FIFO -> 0, LRU -> 1.
@@ -154,9 +126,8 @@ unsigned long long getBinaryMaskForSetIndex(int setBits){
     return ~mask;                           // 000000000.......0000001111
 }
 
-unsigned long long getSetIndex(unsigned long long addressInDecimal, int setBits, int offsetBits){
+unsigned long long getSetIndex(unsigned long long addressInDecimal, int offsetBits, unsigned long long binaryMask){
     unsigned long long tagAndSetInDecimal = addressInDecimal >> (unsigned)offsetBits;
-    unsigned long long binaryMask = getBinaryMaskForSetIndex(setBits); // ...0000001111  if setBits = 4.
     return tagAndSetInDecimal & binaryMask;
 }
 

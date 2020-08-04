@@ -20,21 +20,22 @@ typedef struct Block{
 typedef struct Set{
     Block *head;
     Block *tail;
-} Set, *FaCache, *NwCache;
+} Set, *NwCache;
 
 // For keeping record.
 typedef struct Record{
     unsigned long long reads, writes, hits, misses;
 } Record;
 
-FaCache initFACache (unsigned long long numOfBlocks);
-void freeFACache(FaCache cache);
+Set* initSet (unsigned long long assoc);
+void freeSet(Set *setPointer);
 NwCache initNWCache(unsigned long long setsNum, unsigned long long assoc);
 void freeNWCache(NwCache cache, unsigned long long setsNum);
 int readBlockInSet(Set *set, unsigned long long tag, int policy);
 void writeToSet(Set *set, unsigned long long tag);
 unsigned long long getDecAddress(char *hexAddress);
-unsigned long long getSetIndex(unsigned long long addressInDecimal, int setBits, int offsetBits);
+unsigned long long getBinaryMaskForSetIndex(int setBits);
+unsigned long long getSetIndex(unsigned long long addressInDecimal, int offsetBits, unsigned long long binaryMask);
 unsigned long long getDecTag(unsigned long long addressInDecimal, int setBits, int offsetBits);
 void updateCache(int found, char mode, Set *set, unsigned long long setIdx, unsigned long long tag, Record *record);
 int error(char *str);
