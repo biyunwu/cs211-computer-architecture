@@ -120,20 +120,19 @@ unsigned long long getDecAddress(char *hexAddress){ // "0x...abc123".
     return res;
 }
 
-unsigned long long getBinaryMaskForSetIndex(int setBits){
+unsigned long long getBinaryMaskForSetIndex(unsigned setBits){
     unsigned long long mask = ~(0ULL);      // 111111111.......1111111111        64 - setBits. setBits = 4.
-    mask <<= (unsigned)setBits;             // 111111111.......1111110000
+    mask <<= setBits;                       // 111111111.......1111110000
     return ~mask;                           // 000000000.......0000001111
 }
 
-unsigned long long getSetIndex(unsigned long long addressInDecimal, int offsetBits, unsigned long long binaryMask){
-    unsigned long long tagAndSetInDecimal = addressInDecimal >> (unsigned)offsetBits;
-    return tagAndSetInDecimal & binaryMask;
+unsigned long long getSetIndex(unsigned long long addressInDecimal, unsigned offsetBits, unsigned long long binaryMask){
+    return (addressInDecimal >> offsetBits) & binaryMask; // Get binaryMask from `getBinaryMaskForSetIndex(setBits)`.
 }
 
-unsigned long long getDecTag(unsigned long long addressInDecimal, int setBits, int offsetBits){
+unsigned long long getDecTag(unsigned long long addressInDecimal, unsigned setBits, unsigned offsetBits){
     // Memory address structure: [0x [tag bits] [Set index bits] [block offset bits]]
-    return addressInDecimal >> (unsigned)(setBits + offsetBits);
+    return addressInDecimal >> (setBits + offsetBits);
 }
 
 void updateCache(int found, char mode, Set *set, unsigned long long setIdx, unsigned long long tag, Record *record){

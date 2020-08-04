@@ -9,10 +9,10 @@
 int main(int argc, char* argv[]) {
     if (argc != 6) return error("Invalid arguments! Example: $./first 32 4 fifo assoc:2 trace2.txt");
     // Read arguments: "$./first 32 4 fifo assoc:2 trace2.txt" OR "$./first 32 4 lru assoc:2 trace2.txt".
-    // Policy: 1 -> First In First Out (fifo), 2 -> Least Recently Used (lru).
+    // Policy: 0 -> First In First Out (fifo), 1 -> Least Recently Used (lru).
     // Associativity: 0 -> Fully associative cache, 1 -> Direct mapped cache, n>=2 -> n-way associative cache.
     int policy = -1, assoc = -1;
-    unsigned long long cacheSize, blockSize;
+    long long cacheSize, blockSize;
     char *policyStr = argv[3], *assocStr = argv[4];
     // Get cache size and block size.
     cacheSize = strtol(argv[1], NULL, 10);
@@ -41,47 +41,46 @@ int main(int argc, char* argv[]) {
     if (assoc < 0) return error("Invalid associativity!");
 
     // Calculate lines/blocks, setsNum, offset bits and tag bits.
-    unsigned long long blocksNum = cacheSize/blockSize;
-    unsigned long long setsNum = (assoc == 0) ? 1 : (blocksNum / assoc); // Fully associative cache OR n-way cache.
-    int offsetBits = (int)(log2((double)blockSize)); // log_2 (blockSize)
-    int setBits = (int)(log2((double)setsNum));      // log_2 (setsNum), if setsNum=1, setBits=0. 2^0 = 1.
+    unsigned long long blocksNum = (unsigned long long)(cacheSize/blockSize);
+    unsigned long long setsNum = assoc ? (blocksNum / assoc) : 1; // N-way cache (assoc!=0) OR fully associative cache (assoc=0)
+    unsigned offsetBits = (unsigned)log2((double)blockSize); // log_2 (blockSize)
+    unsigned setBits = (unsigned)log2((double)setsNum);      // log_2 (setsNum), if setsNum=1, setBits=0. 2^0 = 1.
     // Fully associative cache has 0 set bit.
     int tagBits = BITS - setBits - offsetBits;
     // Evaluate cache specs.
-    if (setsNum < 1 || tagBits < 1) return error("Invalid setsNum/tagBits, cannot Set up cache based on arguments!");
+    if (setsNum < 1 || tagBits < 1) return error("Invalid setsNum/tagBits, cannot set up cache based on arguments!");
 
     // Open trace file.
     char *filename = argv[5];           // Trace file to be read by the program.
     FILE *file;
     file = fopen(filename, "r");
-
     // For keeping records.
     Record *record = (Record *) malloc(sizeof(Record));
     record->reads = 0, record->writes = 0, record->hits = 0, record->misses = 0;
+
     // Hexadecimal address has (BITS/4 + 2 + 1) chars with leading "0x" (2) and '\0' (1) which indicates the end of the string.
     // Without the extra 1 bit for '\0', compiling rule "-fsanitize=address" would generate heap-buffer-overflow in running time.
     char c, *hexAddress = (char *) malloc((BITS/4 + 3) * sizeof(char));
-
     // Fully associative cache is a special `NwCache` with a single set, which has `cacheSize/blockSize` blocks.
     NwCache nwCache = (assoc == 0) ? initNWCache(setsNum, blocksNum): initNWCache(setsNum, assoc);
     unsigned long long binaryMask = getBinaryMaskForSetIndex(setBits); // ...0000001111  if setBits = 4.
     while (fscanf(file, "%c\t%s\n", &c, hexAddress) != EOF && (c == 'R' || c == 'W')) {
         unsigned long long decAddress = getDecAddress(hexAddress);
-        unsigned long long setIdx = (assoc == 0) ? 0 : getSetIndex(decAddress, offsetBits, binaryMask);
+        unsigned long long setIdx = assoc ? getSetIndex(decAddress, offsetBits, binaryMask) : 0;
         unsigned long long tag = getDecTag(decAddress, setBits, offsetBits);
         int found = readBlockInSet(&(nwCache[setIdx]), tag, policy);
         updateCache(found, c, nwCache, setIdx, tag, record);
     }
-    freeNWCache(nwCache, setsNum);
 
     // Print result.
     printf("Memory reads: %lld\n", (record->reads));
     printf("Memory writes: %lld\n", (record->writes));
     printf("Cache hits: %lld\n", (record->hits));
     printf("Cache misses: %lld\n", (record->misses));
-    
-    fclose(file);
+
+    freeNWCache(nwCache, setsNum);
     free(hexAddress);
     free(record);
+    fclose(file);
     return 0;
 }
