@@ -9,28 +9,27 @@
 #ifndef PA3_FIRST_H
 #define PA3_FIRST_H
 
-// Cache block definition
+// Cache block definition.
 typedef struct Block{
     int v;                  // valid: 1, invalid: 0.
     unsigned long long tag;
     struct Block *next;
 } Block;
 
-// Cache set definition
+// Cache set definition.
 typedef struct Set{
     Block *head;
     Block *tail;
-} Set, *NwCache;
+} Set, *NWCache;
 
 // For keeping record.
 typedef struct Record{
     unsigned long long reads, writes, hits, misses;
 } Record;
 
-Set* initSet (unsigned long long assoc);
-void freeSet(Set *setPointer);
-NwCache initNWCache(unsigned long long setsNum, unsigned long long assoc);
-void freeNWCache(NwCache cache, unsigned long long setsNum);
+void freeSet(Set *set);
+NWCache initNWCache(unsigned long long setsNum, unsigned long long assoc);
+void freeNWCache(NWCache cache, unsigned long long setsNum);
 int readBlockInSet(Set *set, unsigned long long tag, int policy);
 void writeToSet(Set *set, unsigned long long tag);
 unsigned long long getDecAddress(char *hexAddress);

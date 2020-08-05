@@ -5,17 +5,8 @@
 #include <math.h>
 #include "cache.h"
 
-void freeSet(Set *setPointer){
-    Block *prev = NULL, *ptr = setPointer->head;
-    while (ptr != NULL){ // Free linked list.
-        prev = ptr;
-        ptr = ptr->next;
-        free(prev);
-    }
-}
-
-// Direct-mapped cache is a special n-way cache with assoc=1.
-NwCache initNWCache(unsigned long long setsNum, unsigned long long assoc){
+// Direct-mapped cache is a special n-way cache with assoc=1. Fully associative cache has only 1 set.
+NWCache initNWCache(unsigned long long setsNum, unsigned long long assoc){
     Set *cache = (Set *) malloc(setsNum * sizeof(Set));
     unsigned long long i, j;
     for (i=0; i<setsNum; i++){
@@ -33,24 +24,33 @@ NwCache initNWCache(unsigned long long setsNum, unsigned long long assoc){
     return cache;
 }
 
-void freeNWCache(NwCache cache, unsigned long long setsNum){
+void freeSet(Set *set){
+    Block *prev = NULL, *ptr = set->head;
+    while (ptr != NULL){ // Free linked list.
+        prev = ptr;
+        ptr = ptr->next;
+        free(prev);
+    }
+}
+
+void freeNWCache(NWCache cache, unsigned long long setsNum){
     unsigned long long i;
     for (i=0; i<setsNum; i++){
-        freeSet(&(cache[i]));
+        // freeSet(&(cache[i]));
+        freeSet(cache+i);
     }
     free(cache);
 }
 
 void putBlockToEnd(Set *set, Block *prev, Block *ptr){
-    Block *tail = set->tail;
-    if (ptr == tail) return;
-    if (prev == NULL){ // ptr = set->head
+    if (ptr->next == NULL) return; // ptr is the tail.
+    if (prev == NULL){             // ptr is the head.
         set->head = ptr->next;
     } else {
         prev->next = ptr->next;
     }
     ptr->next = NULL;
-    tail->next = ptr;
+    set->tail->next = ptr;
     set->tail = ptr;
 }
 
@@ -117,19 +117,13 @@ unsigned long long getBinaryMaskForSetIndex(unsigned setBits){
 void updateCache(int found, char mode, Set *set, unsigned long long setIdx, unsigned long long tag, Record *record){
     if (found){     // hit
         (record->hits)++;
-        // Data is available in cache, read does not invoke memory manipulation.
-        if (mode == 'W') (record->writes)++;
     } else {        // miss
         (record->misses)++;
-        if (mode == 'R'){  // Read
-            (record->reads)++;    // Fetch data from memory.
-            writeToSet(&(set[setIdx]), tag); //Update cache.
-        } else {        // Write
-            (record->reads)++;    // Fetch data from memory.
-            writeToSet(&(set[setIdx]), tag); //Update cache.
-            (record->writes)++;
-        }
+        (record->reads)++;                   // Fetch data from memory.
+        writeToSet(set+setIdx, tag);    //Update cache. // writeToSet(&(set[setIdx]), tag);
     }
+    // If mode='R', do nothing. Data is already available in cache.
+    if (mode == 'W') (record->writes)++;
 }
 
 int error(char *str){
