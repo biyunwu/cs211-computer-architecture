@@ -35,8 +35,6 @@ int readBlockInSet(Set *set, unsigned long long tag, int policy);
 void writeToSet(Set *set, unsigned long long tag);
 unsigned long long getDecAddress(char *hexAddress);
 unsigned long long getBinaryMaskForSetIndex(unsigned setBits);
-unsigned long long getSetIndex(unsigned long long addressInDecimal, unsigned int offsetBits, unsigned long long binaryMask);
-unsigned long long getDecTag(unsigned long long addressInDecimal, unsigned setBits, unsigned offsetBits);
 void updateCache(int found, char mode, Set *set, unsigned long long setIdx, unsigned long long tag, Record *record);
 int error(char *str);
 

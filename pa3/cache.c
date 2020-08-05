@@ -5,22 +5,6 @@
 #include <math.h>
 #include "cache.h"
 
-Set* initSet (unsigned long long assoc){
-    Set *setPointer = (Set *) malloc(sizeof(Set));
-    unsigned long long i;
-    Block *temp = NULL;
-    for (i=0; i < assoc; i++){
-        Block *b = (Block *) malloc(sizeof(Block));
-        b->v = 0;
-        b->tag = 0;
-        b->next = temp;
-        if (i==0) setPointer->tail = b;
-        if (i == (assoc - 1)) setPointer->head = b;
-        temp = b;
-    }
-    return setPointer;
-}
-
 void freeSet(Set *setPointer){
     Block *prev = NULL, *ptr = setPointer->head;
     while (ptr != NULL){ // Free linked list.
@@ -33,12 +17,18 @@ void freeSet(Set *setPointer){
 // Direct-mapped cache is a special n-way cache with assoc=1.
 NwCache initNWCache(unsigned long long setsNum, unsigned long long assoc){
     Set *cache = (Set *) malloc(setsNum * sizeof(Set));
-    unsigned long long i;
+    unsigned long long i, j;
     for (i=0; i<setsNum; i++){
-        Set *setPointer = initSet(assoc);
-        cache[i].head = setPointer->head;
-        cache[i].tail = setPointer->tail;
-        free(setPointer); // Free the old set struct (malloc()-ed in 'initSet()') to avoid memory leak.
+        Block *temp = NULL;
+        for (j=0; j < assoc; j++){
+            Block *b = (Block *) malloc(sizeof(Block));
+            b->v = 0;
+            b->tag = 0;
+            b->next = temp;
+            if (j==0) cache[i].tail = b;
+            if (j == (assoc - 1)) cache[i].head = b;
+            temp = b;
+        }
     }
     return cache;
 }
@@ -77,9 +67,7 @@ int readBlockInSet(Set *set, unsigned long long tag, int policy){
     while (ptr != NULL){
         if (ptr->v != 0 && ptr->tag == tag) {
             // Policy: LRU. If found, put "ptr" (the most recently used block) to the end of the linked list.
-            if (policy){
-                putBlockToEnd(set, prev, ptr); // Put "ptr" to the end.
-            }
+            if (policy) putBlockToEnd(set, prev, ptr); // Put "ptr" to the end.
             return 1; // hit
         }
         prev = ptr;
@@ -124,15 +112,6 @@ unsigned long long getBinaryMaskForSetIndex(unsigned setBits){
     unsigned long long mask = ~(0ULL);      // 111111111.......1111111111        64 - setBits. setBits = 4.
     mask <<= setBits;                       // 111111111.......1111110000
     return ~mask;                           // 000000000.......0000001111
-}
-
-unsigned long long getSetIndex(unsigned long long addressInDecimal, unsigned offsetBits, unsigned long long binaryMask){
-    return (addressInDecimal >> offsetBits) & binaryMask; // Get binaryMask from `getBinaryMaskForSetIndex(setBits)`.
-}
-
-unsigned long long getDecTag(unsigned long long addressInDecimal, unsigned setBits, unsigned offsetBits){
-    // Memory address structure: [0x [tag bits] [Set index bits] [block offset bits]]
-    return addressInDecimal >> (setBits + offsetBits);
 }
 
 void updateCache(int found, char mode, Set *set, unsigned long long setIdx, unsigned long long tag, Record *record){
