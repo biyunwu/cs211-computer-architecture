@@ -1,10 +1,8 @@
-/*
- * Created by Biyun Wu on 7/29/20.
+/* Created by Biyun Wu on 7/29/20.
  *
  * Direct mapped cache has setsNum sets. Every set has only 1 block.
  * A fully associative cache has only 1 set which contains all blocks.
- * A n-way cache is an array of sets. And every Set has a linked list with n blocks.
- */
+ * A n-way cache is an array of sets. And every Set has a linked list with n blocks.*/
 
 #ifndef PA3_FIRST_H
 #define PA3_FIRST_H
@@ -27,7 +25,6 @@ typedef struct Record{
     unsigned long long reads, writes, hits, misses;
 } Record;
 
-void freeSet(Set *set);
 NWCache initNWCache(unsigned long long setsNum, unsigned long long assoc);
 void freeNWCache(NWCache cache, unsigned long long setsNum);
 int readBlockInSet(Set *set, unsigned long long tag, int policy);

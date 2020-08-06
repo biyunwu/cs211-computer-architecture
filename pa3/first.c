@@ -6,11 +6,11 @@
 #include "cache.h"
 #define BITS 48
 
+/* Read arguments: "$./first 32 4 fifo assoc:2 trace2.txt" OR "$./first 32 4 lru assoc:2 trace2.txt".
+ * Policy: 0 -> First In First Out (fifo), 1 -> Least Recently Used (lru).
+ * Associativity: 0 -> Fully associative cache, 1 -> Direct mapped cache, n>=2 -> n-way associative cache.*/
 int main(int argc, char* argv[]) {
     if (argc != 6) return error("Invalid arguments! Example: $./first 32 4 fifo assoc:2 trace2.txt");
-    // Read arguments: "$./first 32 4 fifo assoc:2 trace2.txt" OR "$./first 32 4 lru assoc:2 trace2.txt".
-    // Policy: 0 -> First In First Out (fifo), 1 -> Least Recently Used (lru).
-    // Associativity: 0 -> Fully associative cache, 1 -> Direct mapped cache, n>=2 -> n-way associative cache.
     int policy = -1, assoc = -1;
     long long cacheSize, blockSize;
     char *policyStr = argv[3], *assocStr = argv[4];
@@ -57,8 +57,8 @@ int main(int argc, char* argv[]) {
     Record *record = (Record *) malloc(sizeof(Record));
     record->reads = 0, record->writes = 0, record->hits = 0, record->misses = 0;
 
-    // Hexadecimal address has (BITS/4 + 2 + 1) chars with leading "0x" (2) and '\0' (1) which indicates the end of the string.
-    // Without the extra 1 bit for '\0', compiling rule "-fsanitize=address" would generate heap-buffer-overflow in running time.
+    /* Hexadecimal address has (BITS/4 + 2 + 1) chars with leading "0x" (2) and '\0' (1) which indicates the end of the string.
+     * Without the extra 1 bit for '\0', compiling rule "-fsanitize=address" would generate heap-buffer-overflow in running time.*/
     char c, *hexAddress = (char *) malloc((BITS/4 + 3) * sizeof(char));
     // Fully associative cache (assoc=0) is a special `NWCache` with a single set, which has `cacheSize/blockSize` blocks.
     NWCache nwCache = assoc ? initNWCache(setsNum, assoc) : initNWCache(setsNum, blocksNum);

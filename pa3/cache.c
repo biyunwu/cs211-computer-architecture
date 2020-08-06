@@ -24,25 +24,20 @@ NWCache initNWCache(unsigned long long setsNum, unsigned long long assoc){
     return cache;
 }
 
-void freeSet(Set *set){
-    Block *prev = NULL, *ptr = set->head;
-    while (ptr != NULL){ // Free linked list.
-        prev = ptr;
-        ptr = ptr->next;
-        free(prev);
-    }
-}
-
 void freeNWCache(NWCache cache, unsigned long long setsNum){
     unsigned long long i;
     for (i=0; i<setsNum; i++){
-        // freeSet(&(cache[i]));
-        freeSet(cache+i);
+        Block *prev = NULL, *ptr = cache[i].head;
+        while (ptr != NULL){ // Free linked list.
+            prev = ptr;
+            ptr = ptr->next;
+            free(prev);
+        }
     }
     free(cache);
 }
 
-void putBlockToEnd(Set *set, Block *prev, Block *ptr){
+void moveBlockToTail(Set *set, Block *prev, Block *ptr){
     if (ptr->next == NULL) return; // ptr is the tail.
     if (prev == NULL){             // ptr is the head.
         set->head = ptr->next;
@@ -58,7 +53,7 @@ void writeToSet(Set *set, unsigned long long tag){
    // Write data to the 1st block, then put the head to the tail.
    set->head->v = 1;
    set->head->tag = tag;
-   putBlockToEnd(set, NULL, set->head);
+    moveBlockToTail(set, NULL, set->head);
 }
 
 // Policy: FIFO -> 0, LRU -> 1.
@@ -67,7 +62,7 @@ int readBlockInSet(Set *set, unsigned long long tag, int policy){
     while (ptr != NULL){
         if (ptr->v != 0 && ptr->tag == tag) {
             // Policy: LRU. If found, put "ptr" (the most recently used block) to the end of the linked list.
-            if (policy) putBlockToEnd(set, prev, ptr); // Put "ptr" to the end.
+            if (policy) moveBlockToTail(set, prev, ptr); // Put "ptr" to the end.
             return 1; // hit
         }
         prev = ptr;
@@ -109,7 +104,7 @@ unsigned long long getDecAddress(char *hexAddress){ // "0x...abc123".
 }
 
 unsigned long long getBinaryMaskForSetIndex(unsigned setBits){
-    unsigned long long mask = ~(0ULL);      // 111111111.......1111111111        64 - setBits. setBits = 4.
+    unsigned long long mask = ~(0ULL);      // 111111111.......1111111111        If setBits = 4.
     mask <<= setBits;                       // 111111111.......1111110000
     return ~mask;                           // 000000000.......0000001111
 }
