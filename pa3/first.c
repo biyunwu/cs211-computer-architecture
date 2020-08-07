@@ -73,7 +73,6 @@ int main(int argc, char* argv[]) {
         updateCache(found, c, nwCache, setIdx, tag, record);
     }
 
-    // Print result.
     printf("Memory reads: %lld\n", (record->reads));
     printf("Memory writes: %lld\n", (record->writes));
     printf("Cache hits: %lld\n", (record->hits));
