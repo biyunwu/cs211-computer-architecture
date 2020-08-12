@@ -45,7 +45,8 @@ int main(int argc, char* argv[]) {
     unsigned long long setsNum = assoc ? (blocksNum / assoc) : 1; // N-way cache (assoc!=0) OR fully associative cache (assoc=0)
     unsigned offsetBits = (unsigned)log2((double)blockSize); // log_2(blockSize)
     unsigned setBits = (unsigned)log2((double)setsNum); // Fully associative cache has 0 set bit: if setsNum=1, 2^0 = 1, setBits=0.
-    int tagBits = BITS - setBits - offsetBits;
+    unsigned setAndOffsetBits = setBits + offsetBits;
+    int tagBits = BITS - setAndOffsetBits;
     // Evaluate cache specs.
     if (setsNum < 1 || tagBits < 1) return error("Invalid setsNum/tagBits, cannot set up cache based on arguments!");
 
@@ -61,14 +62,13 @@ int main(int argc, char* argv[]) {
      * Without the extra 1 bit for '\0', compiling rule "-fsanitize=address" would generate heap-buffer-overflow in running time.*/
     char c, *hexAddress = (char *) malloc((BITS/4 + 3) * sizeof(char));
     // Fully associative cache (assoc=0) is a special `NWCache` with a single set, which has `cacheSize/blockSize` blocks.
-    NWCache nwCache = assoc ? initNWCache(setsNum, assoc) : initNWCache(setsNum, blocksNum);
+    NWCache nwCache = initNWCache(setsNum, assoc ? assoc : blocksNum);
     unsigned long long binaryMask = getBinaryMaskForSetIndex(setBits); // ...0000001111  if setBits = 4.
     while (fscanf(file, "%c\t%s\n", &c, hexAddress) != EOF && (c == 'R' || c == 'W')) {
         // Memory address structure: [tag bits][Set index bits][block offset bits]
         unsigned long long decAddress = getDecAddress(hexAddress);
         unsigned long long setIdx = binaryMask & (decAddress >> offsetBits); // For FA cache, mask=0. setIdx is always 0.
-        unsigned long long tag = decAddress >> (setBits + offsetBits);
-        // int found = readBlockInSet(&(nwCache[setIdx]), tag, policy);
+        unsigned long long tag = decAddress >> setAndOffsetBits;
         int found = readBlockInSet(nwCache+setIdx, tag, policy);
         updateCache(found, c, nwCache, setIdx, tag, record);
     }

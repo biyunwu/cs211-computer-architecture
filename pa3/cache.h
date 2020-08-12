@@ -1,8 +1,8 @@
 /* Created by Biyun Wu on 7/29/20.
  *
- * Direct mapped cache has setsNum sets. Every set has only 1 block.
+ * A Direct mapped cache has `setsNum` sets. Every set has only 1 block.
  * A fully associative cache has only 1 set which contains all blocks.
- * A n-way cache is an array of sets. And every Set has a linked list with n blocks.*/
+ * An n-way cache is an array of sets. And every Set has a linked list with n blocks.*/
 
 #ifndef PA3_FIRST_H
 #define PA3_FIRST_H
